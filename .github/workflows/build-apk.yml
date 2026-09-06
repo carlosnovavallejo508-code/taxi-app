@@ -1,0 +1,53 @@
+name: Build APK
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Setup Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.21'
+    
+    - name: Setup Android SDK
+      uses: android-actions/setup-android@v3
+    
+    - name: Install NDK
+      run: |
+        yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses
+        $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "ndk;25.2.9519653"
+    
+    - name: Install gomobile
+      run: |
+        go install golang.org/x/mobile/cmd/gomobile@latest
+        export PATH=$PATH:$(go env GOPATH)/bin
+        gomobile init
+    
+    - name: Build APK
+      run: |
+        export PATH=$PATH:$(go env GOPATH)/bin
+        export ANDROID_NDK_HOME=$ANDROID_HOME/ndk/25.2.9519653
+        cd mobile-app
+        go get golang.org/x/mobile
+        gomobile build -target=android -o ../TaxiApp.apk .
+    
+    - name: Upload APK
+      uses: actions/upload-artifact@v3
+      with:
+        name: TaxiApp
+        path: TaxiApp.apk
+    
+    - name: Release
+      uses: softprops/action-gh-release@v1
+      if: startsWith(github.ref, 'refs/tags/')
+      with:
+        files: TaxiApp.apk
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
