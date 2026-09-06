@@ -6,9 +6,17 @@ import (
     "taxi-app/internal/database"
     "taxi-app/internal/handlers"
     "taxi-app/internal/middleware"
+    "taxi-app/internal/websocket"
 )
 
 func SetupRoutes(r *gin.Engine, cfg *config.Config, db *database.Database, cache *database.Cache) {
+    // Crear Hub WebSocket
+    hub := websocket.NewHub()
+    go hub.Run()
+    
+    // Crear handler WebSocket
+    wsHandler := websocket.NewWebSocketHandler(hub)
+    
     // Health check
     r.GET("/health", func(c *gin.Context) {
         c.JSON(200, gin.H{
@@ -66,6 +74,9 @@ func SetupRoutes(r *gin.Engine, cfg *config.Config, db *database.Database, cache
             notificationHandler := handlers.NewNotificationHandler(db)
             protected.GET("/notifications", notificationHandler.GetNotifications)
             protected.PUT("/notifications/:id/read", notificationHandler.MarkAsRead)
+            
+            // WebSocket
+            protected.GET("/ws", wsHandler.HandleConnection)
         }
         
         // Rutas de administrador
