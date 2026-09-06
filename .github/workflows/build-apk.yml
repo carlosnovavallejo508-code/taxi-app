@@ -41,7 +41,7 @@ jobs:
       run: |
         cd mobile-app
         go mod tidy
-        gomobile build -target=android -o ../TaxiApp.apk .
+        gomobile build -target=android -androidapi=34 -o ../TaxiApp.apk .
     
     - name: Upload APK
       uses: actions/upload-artifact@v4
