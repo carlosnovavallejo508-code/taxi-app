@@ -22,23 +22,25 @@ jobs:
     - name: Setup Android SDK
       uses: android-actions/setup-android@v3
     
-    - name: Install NDK
+    - name: Install NDK r21e
       run: |
-        yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses
-        $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "ndk;25.2.9519653"
+        cd $ANDROID_HOME
+        mkdir -p ndk
+        cd ndk
+        wget https://dl.google.com/android/repository/android-ndk-r21e-linux-x86_64.zip
+        unzip -q android-ndk-r21e-linux-x86_64.zip
+        rm android-ndk-r21e-linux-x86_64.zip
+        echo "ANDROID_NDK_HOME=$ANDROID_HOME/ndk/android-ndk-r21e" >> $GITHUB_ENV
     
     - name: Install gomobile
       run: |
         go install golang.org/x/mobile/cmd/gomobile@latest
-        export PATH=$PATH:$(go env GOPATH)/bin
-        gomobile init
+        echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
     
     - name: Build APK
       run: |
-        export PATH=$PATH:$(go env GOPATH)/bin
-        export ANDROID_NDK_HOME=$ANDROID_HOME/ndk/25.2.9519653
         cd mobile-app
-        go get golang.org/x/mobile
+        go mod tidy
         gomobile build -target=android -o ../TaxiApp.apk .
     
     - name: Upload APK
